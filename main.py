@@ -1,5 +1,5 @@
 import zipfile
-import tensorflow as tensorflow
+import tensorflow as tf
 from tensorflow import keras
 from keras import Sequential
 from keras.layers import Dense,Conv2D,MaxPooling2D,Flatten
@@ -50,12 +50,53 @@ def make_a_set(path,dog_folder,cat_folder,which_half):
         dest_path = os.path.join(train_dog_folder, file_name)
         shutil.move(source_path, dest_path)
 
+# Dividing data to test and train sets
+def create_sets(batch_size, image_size):
+    cat_folder = 'cats_and_dogs/PetImages/Cat/'
+    dog_folder = 'cats_and_dogs/PetImages/Dog/'
+    train_folder = 'train'
+    test_folder = 'test'
+    # Creating/clearing train folder 
+    create_clear_dir(train_folder)
+    # Uploading data to train folder 
+    make_a_set(train_folder,dog_folder,cat_folder,1)
+    # Creating/clearing test folder 
+    create_clear_dir(test_folder)
+    # Uploading data to test folder
+    make_a_set(test_folder,dog_folder,cat_folder,2)
+    # Creating keras sets
+        # Train
+    train_ds = keras.utils.image_dataset_from_directory(
+    directory = 'train' ,
+    labels = 'inferred',
+    label_mode = 'int',
+    batch_size = batch_size,
+    image_size = image_size)
+        # Test
+    test_ds = keras.utils.image_dataset_from_directory(
+    directory = 'test' ,
+    labels = 'inferred',
+    label_mode = 'int',
+    batch_size = batch_size,
+    image_size = image_size)
+    return train_ds,test_ds
+
+    # Normalizing
+def process(image,label):
+    image = tf.cast(image/255. ,tf.float32)
+    return image,label
+
 def main():
     # Extracting files
     zip_arch = zipfile.ZipFile('cats_and_dogs.zip','r')
-    if not os.path.exists("cats_and_dogs"):
-        zip_arch.extractall('cats_and_dogs')
+    create_clear_dir("cats_and_dogs")
+    zip_arch.extractall('cats_and_dogs')
     zip_arch.close()
+    # Creating datasets
+    train_ds,test_ds = create_sets(32, (256,256))
+    # Normalizing
+    train_ds = train_ds.map(process)
+    test_ds = test_ds.map(process)
 
 if __name__=="__main__":
     main()
