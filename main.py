@@ -22,6 +22,7 @@ def create_clear_dir(path):
                     print(f"{file_name} is not a file.")
             except Exception as e:
                 print(f"Error while removing file: {file_name}: {e}")
+
 # Dividing files in different sets
 def make_a_set(path,dog_folder,cat_folder,which_half):
     # Create subfolders for cat and dog
@@ -82,6 +83,40 @@ def create_sets(batch_size, image_size):
     image_size = image_size)
     return train_ds,test_ds
 
+def is_image_valid(image_path):
+    try:
+        # Load the image
+        image = tf.io.read_file(image_path)
+        image = tf.image.decode_image(image)      
+        # Check channel number
+        num_channels = image.shape[-1]
+        return num_channels in [1, 3, 4]
+    
+    except tf.errors.InvalidArgumentError as e:
+        print(f"Error for image: {image_path}: {e}")
+        return False
+    
+def filter_images(directory):
+    valid_images = []
+    invalid_images = []
+    
+    # Iteruj przez pliki w katalogu
+    for filename in os.listdir(directory):
+        if filename.endswith(('.jpg', '.jpeg', '.png')):
+            image_path = os.path.join(directory, filename)
+            if is_image_valid(image_path):
+                valid_images.append(image_path)
+            else:
+                invalid_images.append(image_path)
+    
+    return valid_images, invalid_images
+
+def check_and_filter_data(image_directory):
+    valid_images, invalid_images = filter_images(image_directory)
+# Delete faulty images
+    for invalid_image in invalid_images:
+        os.remove(invalid_image)
+
 # Creting model and adding filters
 def create_model():
     model = Sequential()
@@ -111,8 +146,13 @@ def main():
     create_clear_dir("cats_and_dogs")
     zip_arch.extractall('cats_and_dogs')
     zip_arch.close()
+    # Clearing data
+    check_and_filter_data('cats_and_dogs/PetImages/Cat/')
+    check_and_filter_data('cats_and_dogs/PetImages/Dog/')
     # Creating datasets
     train_ds,test_ds = create_sets(32, (256,256))
+    
+    
     # Normalizing
     train_ds = train_ds.map(process)
     test_ds = test_ds.map(process)
