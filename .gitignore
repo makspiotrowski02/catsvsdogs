@@ -5,3 +5,4 @@ train
 cats_and_dogs.zip
 cats_and_dogs.zip:Zone.Identifier
 env
+__pycache__
